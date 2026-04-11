@@ -217,3 +217,4 @@ MIT License - Free for commercial and personal use.
 **Professional CMYK Converter** - Converting images for professional printing since 2024 🎨# CMYK
 # CMYK
 # CMYK
+# CMYK
