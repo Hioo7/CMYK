@@ -1,86 +1,67 @@
 'use client';
 
 import React from 'react';
-import { Settings, Palette, Sliders } from 'lucide-react';
+import { Settings, ChevronDown, ChevronUp, Palette, Sliders } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+
+interface Settings {
+  quality: number;
+  preserveTransparency: boolean;
+  iccProfile: string;
+  blackGeneration: string;
+}
 
 interface ConversionSettingsProps {
-  settings: {
-    quality: number;
-    preserveTransparency: boolean;
-    iccProfile: string;
-    blackGeneration: string;
-  };
-  onSettingsChange: (settings: any) => void;
+  settings: Settings;
+  onSettingsChange: (settings: Settings) => void;
 }
 
 export function ConversionSettings({ settings, onSettingsChange }: ConversionSettingsProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
-  const updateSetting = (key: string, value: any) => {
+  const update = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     onSettingsChange({ ...settings, [key]: value });
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+    <Card className="bg-gray-900/70 border-gray-700/60 backdrop-blur-sm">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-slate-700/30 transition-colors">
+          <CardHeader className="cursor-pointer hover:bg-gray-800/40 transition-colors rounded-t-lg py-3 px-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-slate-700/50 rounded-lg">
-                  <Settings className="w-5 h-5 text-slate-300" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-gray-800 rounded-md">
+                  <Settings className="w-4 h-4 text-gray-400" />
                 </div>
-                <CardTitle className="text-white">Conversion Settings</CardTitle>
+                <CardTitle className="text-white text-sm font-medium">Conversion Settings</CardTitle>
               </div>
-              <Button variant="ghost" size="sm" className="text-slate-400">
-                {isOpen ? '−' : '+'}
-              </Button>
+              {isOpen
+                ? <ChevronUp className="w-4 h-4 text-gray-500" />
+                : <ChevronDown className="w-4 h-4 text-gray-500" />
+              }
             </div>
           </CardHeader>
         </CollapsibleTrigger>
-        
-        <CollapsibleContent>
-          <CardContent className="space-y-6">
-            {/* Quality Slider */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-slate-300 flex items-center space-x-2">
-                  <Sliders className="w-4 h-4" />
-                  <span>Output Quality</span>
-                </Label>
-                <span className="text-sm text-slate-400">{settings.quality}%</span>
-              </div>
-              <Slider
-                value={[settings.quality]}
-                onValueChange={(value) => updateSetting('quality', value[0])}
-                max={100}
-                min={70}
-                step={5}
-                className="w-full"
-              />
-              <p className="text-xs text-slate-500">
-                Higher quality preserves more detail but increases file size
-              </p>
-            </div>
 
-            {/* ICC Profile Selection */}
-            <div className="space-y-3">
-              <Label className="text-slate-300 flex items-center space-x-2">
-                <Palette className="w-4 h-4" />
-                <span>ICC Profile</span>
+        <CollapsibleContent>
+          <CardContent className="px-5 pb-5 space-y-5 pt-1">
+
+            {/* ICC Profile */}
+            <div className="space-y-2">
+              <Label className="text-gray-300 text-xs flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-cyan-500" />
+                ICC Profile
               </Label>
-              <Select value={settings.iccProfile} onValueChange={(value) => updateSetting('iccProfile', value)}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+              <Select value={settings.iccProfile} onValueChange={v => update('iccProfile', v)}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white text-xs h-8">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
                   <SelectItem value="default">Default CMYK</SelectItem>
                   <SelectItem value="coated-fogra39">Coated FOGRA39</SelectItem>
                   <SelectItem value="uncoated-fogra29">Uncoated FOGRA29</SelectItem>
@@ -88,44 +69,43 @@ export function ConversionSettings({ settings, onSettingsChange }: ConversionSet
                   <SelectItem value="japan-color-2001">Japan Color 2001</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-500">
-                Choose the appropriate ICC profile for your printing process
-              </p>
+              <p className="text-xs text-gray-600">Select the color profile for your print process</p>
             </div>
 
             {/* Black Generation */}
-            <div className="space-y-3">
-              <Label className="text-slate-300">Black Generation</Label>
-              <Select value={settings.blackGeneration} onValueChange={(value) => updateSetting('blackGeneration', value)}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+            <div className="space-y-2">
+              <Label className="text-gray-300 text-xs flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-cyan-500" />
+                Black Generation (GCR)
+              </Label>
+              <Select value={settings.blackGeneration} onValueChange={v => update('blackGeneration', v)}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white text-xs h-8">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="none">None</SelectItem>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  <SelectItem value="none">None — max color fidelity</SelectItem>
                   <SelectItem value="light">Light</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="heavy">Heavy</SelectItem>
                   <SelectItem value="maximum">Maximum</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-500">
-                Controls how much black ink replaces CMY colors
-              </p>
+              <p className="text-xs text-gray-600">How much K ink replaces CMY in neutral areas</p>
             </div>
 
             {/* Preserve Transparency */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-slate-300">Preserve Transparency</Label>
-                <p className="text-xs text-slate-500">
-                  Maintain alpha channel in converted images
-                </p>
+            <div className="flex items-center justify-between py-1">
+              <div>
+                <Label className="text-gray-300 text-xs">Preserve Transparency</Label>
+                <p className="text-xs text-gray-600 mt-0.5">Keep alpha channel in output</p>
               </div>
               <Switch
                 checked={settings.preserveTransparency}
-                onCheckedChange={(checked) => updateSetting('preserveTransparency', checked)}
+                onCheckedChange={v => update('preserveTransparency', v)}
+                className="data-[state=checked]:bg-cyan-600"
               />
             </div>
+
           </CardContent>
         </CollapsibleContent>
       </Collapsible>

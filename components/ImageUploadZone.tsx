@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+import { useDropzone, FileRejection } from 'react-dropzone';
+import { Upload, Image as ImageIcon, FileArchive, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -10,8 +10,24 @@ interface ImageUploadZoneProps {
   onFileUpload: (files: File[]) => void;
 }
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
 export function ImageUploadZone({ onFileUpload }: ImageUploadZoneProps) {
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const [rejectedMessage, setRejectedMessage] = useState<string | null>(null);
+
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+    setRejectedMessage(null);
+
+    if (rejectedFiles.length > 0) {
+      const messages = rejectedFiles.map(({ file, errors }) => {
+        if (errors.some(e => e.message.toLowerCase().includes('size'))) {
+          return `"${file.name}" exceeds 50 MB limit`;
+        }
+        return `"${file.name}" is not a supported format`;
+      });
+      setRejectedMessage(messages.join(' · '));
+    }
+
     if (acceptedFiles.length > 0) {
       onFileUpload(acceptedFiles);
     }
@@ -21,64 +37,78 @@ export function ImageUploadZone({ onFileUpload }: ImageUploadZoneProps) {
     onDrop,
     accept: {
       'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png']
+      'image/png':  ['.png'],
+      'application/zip':             ['.zip'],
+      'application/x-zip-compressed':['.zip'],
     },
-    multiple: true
+    multiple: true,
+    maxSize: MAX_FILE_SIZE,
   });
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-      <CardContent className="p-6">
+    <Card className="bg-gray-900/70 border-gray-700/60 backdrop-blur-sm">
+      <CardContent className="p-5">
         <div
           {...getRootProps()}
           className={`
-            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200
-            ${isDragActive 
-              ? 'border-blue-400 bg-blue-500/10' 
-              : 'border-slate-600 hover:border-slate-500 hover:bg-slate-700/30'
+            border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
+            transition-all duration-200
+            ${isDragActive
+              ? 'border-cyan-400 bg-cyan-500/10 scale-[1.01]'
+              : 'border-gray-600 hover:border-cyan-600/70 hover:bg-gray-800/40'
             }
           `}
         >
           <input {...getInputProps()} />
-          
-          <div className="flex flex-col items-center space-y-4">
+
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon cluster */}
             <div className={`
-              p-4 rounded-full transition-colors duration-200
-              ${isDragActive 
-                ? 'bg-blue-500/20 text-blue-400' 
-                : 'bg-slate-700/50 text-slate-400'
-              }
+              flex items-center gap-2 p-4 rounded-2xl transition-colors duration-200
+              ${isDragActive ? 'bg-cyan-500/20 text-cyan-400' : 'bg-gray-800 text-gray-400'}
             `}>
               {isDragActive ? (
                 <ImageIcon className="w-8 h-8" />
               ) : (
-                <Upload className="w-8 h-8" />
+                <>
+                  <Upload className="w-7 h-7" />
+                  <span className="text-gray-600 font-light">·</span>
+                  <FileArchive className="w-7 h-7" />
+                </>
               )}
             </div>
-            
+
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                {isDragActive ? 'Drop images here' : 'Upload Images'}
+              <h3 className="text-base font-semibold text-white mb-1">
+                {isDragActive ? 'Drop files here' : 'Upload Images or ZIP'}
               </h3>
-              <p className="text-slate-400 text-sm mb-4">
-                Drag and drop your JPG, JPEG, or PNG files here
+              <p className="text-gray-400 text-sm">
+                Drag & drop your files, or click to browse
               </p>
             </div>
-            
-            <Button 
-              variant="outline" 
-              className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-cyan-700 text-cyan-400 hover:bg-cyan-950 hover:text-cyan-300 bg-transparent"
             >
               Choose Files
             </Button>
-            
-            <div className="text-xs text-slate-500 space-y-1">
-              <p>Supported formats: JPG, JPEG, PNG</p>
-              <p>Maximum file size: 50MB per image</p>
-              <p>Multiple files supported</p>
+
+            <div className="text-xs text-gray-500 space-y-0.5">
+              <p>Formats: JPG · PNG · ZIP (containing images)</p>
+              <p>Max 50 MB per file</p>
             </div>
           </div>
         </div>
+
+        {rejectedMessage && (
+          <div className="mt-3 flex items-start gap-2 p-3 bg-red-950/50 border border-red-700/40 rounded-lg">
+            <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+            <p className="text-sm text-red-400">{rejectedMessage}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
