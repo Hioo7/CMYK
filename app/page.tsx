@@ -4,7 +4,6 @@ import React, { useState, useCallback } from 'react';
 import { Download, Image as ImageIcon, Trash2, FileArchive, CheckCircle2, Loader2, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { convertToCMYK, downloadImage, getImageMetadata, extractImagesFromZip } from '@/lib/image-utils';
 import { ImagePreview } from '@/components/ImagePreview';
@@ -293,10 +292,12 @@ export default function Home() {
                     {/* Progress bar */}
                     {image.isProcessing && (
                       <div className="mt-3 space-y-1">
-                        <Progress
-                          value={image.progress}
-                          className="h-1.5 bg-gray-800 [&>div]:bg-gradient-to-r [&>div]:from-cyan-500 [&>div]:to-blue-500"
-                        />
+                        <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all"
+                            style={{ width: `${image.progress}%` }}
+                          />
+                        </div>
                         <p className="text-xs text-gray-500">
                           Converting… {Math.round(image.progress)}%
                         </p>
