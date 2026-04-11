@@ -58,9 +58,9 @@ export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
         <div className="flex items-center gap-3 p-3 bg-emerald-950/40 border border-emerald-700/40 rounded-lg">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <div className="min-w-0">
-            <p className="text-emerald-300 text-sm font-medium">CMYK PNG ready</p>
+            <p className="text-emerald-300 text-sm font-medium">CMYK TIFF ready</p>
             <p className="text-emerald-600 text-xs">
-              True CMYK color space · PNG lossless · Print-ready ICC profiled
+              True CMYK color space · LZW lossless · 300 DPI · ICC profiled
             </p>
           </div>
         </div>
@@ -71,7 +71,7 @@ export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
         <div className="grid grid-cols-3 gap-2 text-center">
           <MetaCell label="Dimensions" value={`${image.metadata.width}×${image.metadata.height}`} />
           <MetaCell label="Input" value={originalFormat} />
-          <MetaCell label="Output" value="CMYK PNG" highlight />
+          <MetaCell label="Output" value="CMYK TIFF" highlight />
         </div>
       )}
 
@@ -82,7 +82,7 @@ export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
           className="w-full bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium h-9"
         >
           <Download className="w-4 h-4 mr-2" />
-          Download CMYK PNG
+          Download CMYK TIFF
         </Button>
       )}
     </div>

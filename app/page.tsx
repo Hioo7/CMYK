@@ -109,7 +109,7 @@ export default function Home() {
   const handleDownload = (image: ProcessedImage) => {
     if (image.convertedUrl) {
       const baseName = image.originalFile.name.replace(/\.[^.]+$/, '');
-      downloadImage(image.convertedUrl, `${baseName}_CMYK.png`);
+      downloadImage(image.convertedUrl, `${baseName}_CMYK.tiff`);
     }
   };
 
@@ -158,7 +158,7 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-gray-400 max-w-xl mx-auto text-sm">
-            Convert RGB images to print-ready CMYK — lossless PNG output.
+            Convert RGB images to true CMYK TIFF — print-ready, 300 DPI, ICC profiled.
             Supports JPG, PNG, and ZIP archives.
           </p>
         </div>
