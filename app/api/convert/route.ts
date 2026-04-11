@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sharp from 'sharp';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -15,28 +14,45 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Convert to true CMYK TIFF using Sharp/libvips ICC-based conversion
-    const cmykBuffer = await sharp(buffer)
-      .toColorspace('cmyk')
-      .tiff({
-        compression: 'lzw',   // lossless LZW compression
-        quality: 100,
-        xres: 300,             // 300 DPI — print-ready resolution
-        yres: 300,
-      })
-      .toBuffer();
+    // Dynamically import sharp
+    let sharp;
+    try {
+      sharp = (await import('sharp')).default;
+    } catch (importErr) {
+      console.warn('Sharp import failed:', importErr);
+      return NextResponse.json(
+        { error: 'Image processing library unavailable' },
+        { status: 503 }
+      );
+    }
 
-    return new NextResponse(cmykBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/tiff',
-        'Content-Length': String(cmykBuffer.length),
-      },
-    });
+    try {
+      // Convert to CMYK PNG (more serverless-compatible than TIFF)
+      const cmykBuffer = await sharp(buffer)
+        .toColorspace('cmyk')
+        .png({
+          quality: 100,
+          compressionLevel: 9,
+        })
+        .toBuffer();
+
+      return new NextResponse(cmykBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/png',
+          'Content-Length': String(cmykBuffer.length),
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    } catch (sharpErr) {
+      console.error('Sharp conversion error:', sharpErr);
+      throw sharpErr;
+    }
   } catch (err) {
     console.error('CMYK conversion error:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Conversion failed';
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Conversion failed' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

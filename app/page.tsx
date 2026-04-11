@@ -109,7 +109,7 @@ export default function Home() {
   const handleDownload = (image: ProcessedImage) => {
     if (image.convertedUrl) {
       const baseName = image.originalFile.name.replace(/\.[^.]+$/, '');
-      downloadImage(image.convertedUrl, `${baseName}_CMYK.tiff`);
+      downloadImage(image.convertedUrl, `${baseName}_CMYK.png`);
     }
   };
 
