@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 
 export const runtime = 'nodejs';
-
-// Allow up to 50 MB request body
-export const config = {
-  api: { bodyParser: false },
-};
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
