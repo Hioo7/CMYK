@@ -200,42 +200,30 @@ export async function convertToCMYK(
         const cmykData   = new Uint8Array((total / 4) * 4);
         const blackGenFn = BLACK_GENERATION[settings.blackGeneration] ?? BLACK_GENERATION['medium'];
 
-        // sRGB linearisation: remove gamma before colour math, then re-encode.
-        // Working in linear light gives accurate CMY values.
-        const toLinear = (v: number) => {
-          const n = v / 255;
-          return n <= 0.04045 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
-        };
-        const fromLinear = (v: number) => {
-          const g = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
-          return Math.max(0, Math.min(1, g));
-        };
-
         for (let i = 0; i < total; i += 4) {
-          // Linearise sRGB
-          const rL = toLinear(data[i]);
-          const gL = toLinear(data[i + 1]);
-          const bL = toLinear(data[i + 2]);
+          // Work in sRGB display space — CMY are ink percentages, not light values,
+          // so no gamma linearisation is needed. The roundtrip R = (1-C)×(1-K)×255
+          // stays accurate this way.
+          const rN = data[i]     / 255;
+          const gN = data[i + 1] / 255;
+          const bN = data[i + 2] / 255;
 
-          // CMY in linear light
-          let c = 1 - rL;
-          let m = 1 - gL;
-          let y = 1 - bL;
+          let c = 1 - rN;
+          let m = 1 - gN;
+          let y = 1 - bN;
 
-          // GCR (Gray Component Replacement) + UCR (Under Color Removal)
           let k = 0;
           if (settings.blackGeneration !== 'none') {
-            k = blackGenFn(c, m, y);   // ← removed the erroneous * 0.3 dampener
-            c = Math.max(0, c - k);    // ← proper UCR: subtract k, not k * 0.2
+            k = blackGenFn(c, m, y); // correct GCR amount (no * 0.3 dampener)
+            c = Math.max(0, c - k);  // proper UCR: subtract full k (not k * 0.2)
             m = Math.max(0, m - k);
             y = Math.max(0, y - k);
           }
 
-          // Re-encode CMY back through sRGB gamma before quantising
           const px = (i / 4) * 4;
-          cmykData[px]     = Math.round(fromLinear(c) * 255);
-          cmykData[px + 1] = Math.round(fromLinear(m) * 255);
-          cmykData[px + 2] = Math.round(fromLinear(y) * 255);
+          cmykData[px]     = Math.round(c * 255);
+          cmykData[px + 1] = Math.round(m * 255);
+          cmykData[px + 2] = Math.round(y * 255);
           cmykData[px + 3] = Math.round(k * 255);
 
           if (i % 40000 === 0) {
