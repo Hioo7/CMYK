@@ -70,5 +70,9 @@
     "typescript": "5.2.2",
     "vaul": "^0.9.9",
     "zod": "^3.23.8"
+  },
+  "optionalDependencies": {
+    "@img/sharp-linux-x64": "^0.34.0",
+    "@img/sharp-linux-arm64": "^0.34.0"
   }
 }

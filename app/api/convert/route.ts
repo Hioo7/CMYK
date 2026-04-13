@@ -16,14 +16,13 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // Sharp converts to a true CMYK TIFF using libvips ICC-managed conversion.
-    // PNG cannot hold CMYK — TIFF is the correct container for print-ready CMYK.
-    // Use 'none' compression to avoid any lossy artefacts; LZW is lossless but
-    // some viewers have edge-case bugs with LZW CMYK — uncompressed is safest.
+    // LZW is lossless and typically halves the file size vs uncompressed,
+    // keeping the response well under Vercel's 4.5 MB body limit.
     const cmykBuffer = await sharp(buffer)
       .toColorspace('cmyk')
       .tiff({
-        compression: 'none', // uncompressed — zero quality loss, safest for CMYK
-        xres: 300,           // 300 DPI — print-ready
+        compression: 'lzw', // lossless — no quality loss, smaller than uncompressed
+        xres: 300,          // 300 DPI — print-ready
         yres: 300,
         bitdepth: 8,
       })

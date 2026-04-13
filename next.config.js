@@ -5,9 +5,10 @@ const nextConfig = {
   },
   images: { unoptimized: true },
   experimental: {
-    // Required so Vercel/Next.js does not bundle Sharp — it must load its
-    // native binary from the runtime layer instead.
+    // Prevent Next.js from bundling Sharp — it must load its native binary
+    // from node_modules at runtime (required for Vercel Linux deployment).
     serverComponentsExternalPackages: ['sharp'],
+    serverExternalPackages: ['sharp'],
   },
 };
 
