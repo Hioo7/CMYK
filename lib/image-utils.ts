@@ -149,14 +149,32 @@ function writeCmykTiff(width: number, height: number, cmykData: Uint8Array): Blo
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main conversion — runs entirely in the browser, no server call needed.
-// Uses the original RGB→CMYK algorithm, then writes raw CMYK into a TIFF.
+// Main conversion — tries the server-side Sharp API first (proper ICC color
+// management), falls back to the fixed client-side path if the server is
+// unavailable.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function convertToCMYK(
   file: File,
   settings: ConversionSettings,
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
+  onProgress?.(10);
+
+  // ── 1. Try server-side conversion (Sharp + ICC profiles) ─────────────────
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/convert', { method: 'POST', body: formData });
+    if (res.ok) {
+      onProgress?.(100);
+      return await res.blob();
+    }
+  } catch {
+    // Server unavailable — fall through to client-side path
+  }
+
+  // ── 2. Client-side fallback with corrected algorithm ─────────────────────
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -170,44 +188,54 @@ export async function convertToCMYK(
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) throw new Error('Could not get canvas context');
 
-        ctx.imageSmoothingEnabled  = true;
-        ctx.imageSmoothingQuality  = 'high';
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0);
-        onProgress?.(20);
+        onProgress?.(25);
 
         const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const total    = data.length;
         onProgress?.(35);
 
-        // Allocate raw CMYK buffer (4 channels × 8-bit, same layout as TIFF strip)
-        const cmykData = new Uint8Array((total / 4) * 4);
-
+        const cmykData   = new Uint8Array((total / 4) * 4);
         const blackGenFn = BLACK_GENERATION[settings.blackGeneration] ?? BLACK_GENERATION['medium'];
 
+        // sRGB linearisation: remove gamma before colour math, then re-encode.
+        // Working in linear light gives accurate CMY values.
+        const toLinear = (v: number) => {
+          const n = v / 255;
+          return n <= 0.04045 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+        };
+        const fromLinear = (v: number) => {
+          const g = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+          return Math.max(0, Math.min(1, g));
+        };
+
         for (let i = 0; i < total; i += 4) {
-          const rN = data[i]     / 255;
-          const gN = data[i + 1] / 255;
-          const bN = data[i + 2] / 255;
+          // Linearise sRGB
+          const rL = toLinear(data[i]);
+          const gL = toLinear(data[i + 1]);
+          const bL = toLinear(data[i + 2]);
 
-          // CMY from RGB
-          let c = 1 - rN;
-          let m = 1 - gN;
-          let y = 1 - bN;
+          // CMY in linear light
+          let c = 1 - rL;
+          let m = 1 - gL;
+          let y = 1 - bL;
 
-          // Black generation (original algorithm)
+          // GCR (Gray Component Replacement) + UCR (Under Color Removal)
           let k = 0;
           if (settings.blackGeneration !== 'none') {
-            k = blackGenFn(c, m, y) * 0.3;
-            const reduction = k * 0.2;
-            c = Math.max(0, c - reduction);
-            m = Math.max(0, m - reduction);
-            y = Math.max(0, y - reduction);
+            k = blackGenFn(c, m, y);   // ← removed the erroneous * 0.3 dampener
+            c = Math.max(0, c - k);    // ← proper UCR: subtract k, not k * 0.2
+            m = Math.max(0, m - k);
+            y = Math.max(0, y - k);
           }
 
+          // Re-encode CMY back through sRGB gamma before quantising
           const px = (i / 4) * 4;
-          cmykData[px]     = Math.round(c * 255);
-          cmykData[px + 1] = Math.round(m * 255);
-          cmykData[px + 2] = Math.round(y * 255);
+          cmykData[px]     = Math.round(fromLinear(c) * 255);
+          cmykData[px + 1] = Math.round(fromLinear(m) * 255);
+          cmykData[px + 2] = Math.round(fromLinear(y) * 255);
           cmykData[px + 3] = Math.round(k * 255);
 
           if (i % 40000 === 0) {

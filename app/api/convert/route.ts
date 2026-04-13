@@ -17,12 +17,15 @@ export async function POST(request: NextRequest) {
 
     // Sharp converts to a true CMYK TIFF using libvips ICC-managed conversion.
     // PNG cannot hold CMYK — TIFF is the correct container for print-ready CMYK.
+    // Use 'none' compression to avoid any lossy artefacts; LZW is lossless but
+    // some viewers have edge-case bugs with LZW CMYK — uncompressed is safest.
     const cmykBuffer = await sharp(buffer)
       .toColorspace('cmyk')
       .tiff({
-        compression: 'lzw',  // lossless
-        xres: 300,            // 300 DPI — print-ready
+        compression: 'none', // uncompressed — zero quality loss, safest for CMYK
+        xres: 300,           // 300 DPI — print-ready
         yres: 300,
+        bitdepth: 8,
       })
       .toBuffer();
 
