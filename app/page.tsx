@@ -28,7 +28,7 @@ export default function Home() {
     quality: 100,
     preserveTransparency: true,
     iccProfile: 'default',
-    blackGeneration: 'light',
+    blackGeneration: 'none',
   });
 
   const processFiles = useCallback(async (files: File[]) => {

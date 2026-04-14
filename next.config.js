@@ -3,12 +3,14 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  output: 'standalone',
   images: { unoptimized: true },
   experimental: {
-    // Prevent Next.js from bundling Sharp — it must load its native binary
-    // from node_modules at runtime (required for Vercel Linux deployment).
     serverComponentsExternalPackages: ['sharp'],
-    serverExternalPackages: ['sharp'],
+    // Ensures Sharp's native binary is included in the standalone output trace.
+    outputFileTracingIncludes: {
+      '/api/convert': ['./node_modules/@img/**', './node_modules/sharp/**'],
+    },
   },
 };
 
