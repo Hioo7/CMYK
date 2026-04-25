@@ -14,6 +14,7 @@ interface Settings {
   preserveTransparency: boolean;
   iccProfile: string;
   blackGeneration: string;
+  outputResolution: string;
 }
 
 interface ConversionSettingsProps {
@@ -91,6 +92,26 @@ export function ConversionSettings({ settings, onSettingsChange }: ConversionSet
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-600">How much K ink replaces CMY in neutral areas</p>
+            </div>
+
+            {/* Output Resolution */}
+            <div className="space-y-2">
+              <Label className="text-gray-300 text-xs flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-cyan-500" />
+                Output Resolution (optional)
+              </Label>
+              <Select value={settings.outputResolution} onValueChange={v => update('outputResolution', v)}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white text-xs h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  <SelectItem value="auto">300 DPI — print ready (default)</SelectItem>
+                  <SelectItem value="preserve">Preserve input (no resampling)</SelectItem>
+                  <SelectItem value="150">150 DPI</SelectItem>
+                  <SelectItem value="600">600 DPI — high quality</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-600">Resamples pixels to keep physical print size the same</p>
             </div>
 
             {/* Preserve Transparency */}

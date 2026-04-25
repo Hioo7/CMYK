@@ -29,6 +29,7 @@ export default function Home() {
     preserveTransparency: true,
     iccProfile: 'default',
     blackGeneration: 'none',
+    outputResolution: 'auto',
   });
 
   const processFiles = useCallback(async (files: File[]) => {
@@ -158,7 +159,7 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-gray-400 max-w-xl mx-auto text-sm">
-            Convert RGB images to true CMYK TIFF — print-ready, 300 DPI, ICC profiled.
+            Convert RGB images to true CMYK TIFF — print-ready, ICC profiled, preserves original DPI.
             Supports JPG, PNG, and ZIP archives.
           </p>
         </div>

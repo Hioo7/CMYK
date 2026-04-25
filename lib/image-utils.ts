@@ -12,6 +12,7 @@ export interface ConversionSettings {
   preserveTransparency: boolean;
   iccProfile: string;
   blackGeneration: string;
+  outputResolution: string; // 'auto' = same as input, or a DPI number as string
 }
 
 // Black generation functions (original)
@@ -164,6 +165,7 @@ export async function convertToCMYK(
   try {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('outputResolution', settings.outputResolution ?? 'auto');
 
     const res = await fetch('/api/convert', { method: 'POST', body: formData });
     if (res.ok) {
