@@ -50,23 +50,19 @@ jobs:
             # Authenticate with Docker Hub
             echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
-            # Pull latest image
+            # Pull new image while old container is still serving traffic
             docker pull "${IMAGE}:latest"
 
-            # Start new container
-            docker stop cmyk-app-new 2>/dev/null || true
-            docker rm   cmyk-app-new 2>/dev/null || true
+            # Stop old container and free port 7000 before starting new one
+            docker stop cmyk-app 2>/dev/null || true
+            docker rm   cmyk-app 2>/dev/null || true
+
+            # Start new container (port is now free)
             docker run -d \
-              --name cmyk-app-new \
+              --name cmyk-app \
               --restart unless-stopped \
               -p 7000:7000 \
               "${IMAGE}:latest"
-
-            # Wait for it to be healthy, then swap
-            sleep 10
-            docker stop cmyk-app 2>/dev/null || true
-            docker rm   cmyk-app 2>/dev/null || true
-            docker rename cmyk-app-new cmyk-app
 
             # Remove old images to free disk space
             docker image prune -f
