@@ -69,7 +69,7 @@ export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
       {/* Metadata strip */}
       {image.metadata && (
         <div className="grid grid-cols-3 gap-2 text-center">
-          <MetaCell label="Dimensions" value={`${image.metadata.width}×${image.metadata.height}`} />
+          <MetaCell label="Dimensions" value={`${image.metadata.width}×${image.metadata.height} px`} />
           <MetaCell label="Input" value={originalFormat} />
           <MetaCell label="Output" value="CMYK TIFF" highlight />
         </div>
