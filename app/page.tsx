@@ -316,6 +316,7 @@ export default function Home() {
                     <ImagePreview
                       image={image}
                       onDownload={() => handleDownload(image)}
+                      outputResolution={settings.outputResolution}
                     />
                   </CardContent>
                 </Card>

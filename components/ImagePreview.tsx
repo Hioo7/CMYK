@@ -9,12 +9,35 @@ import type { ProcessedImage } from '@/app/page';
 interface ImagePreviewProps {
   image: ProcessedImage;
   onDownload: () => void;
+  outputResolution?: string;
 }
 
-export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
+// Credit-card frame: 85.6 × 54 mm (ISO/IEC 7810 ID-1)
+const CARD_W_MM = 85.6;
+const CARD_H_MM = 54;
+
+function cardPx(dpi: number) {
+  return {
+    w: Math.round(CARD_W_MM / 25.4 * dpi),
+    h: Math.round(CARD_H_MM / 25.4 * dpi),
+  };
+}
+
+export function ImagePreview({ image, onDownload, outputResolution = 'auto' }: ImagePreviewProps) {
   if (image.isProcessing || image.error) return null;
 
   const originalFormat = image.originalFile.name.split('.').pop()?.toUpperCase() ?? 'IMAGE';
+
+  // Compute output pixel dimensions from DPI setting
+  let dimSub: string;
+  if (outputResolution === 'preserve') {
+    // We don't know the input DPI here; show original px as proxy
+    dimSub = image.metadata ? `${image.metadata.width} × ${image.metadata.height} px (input)` : '';
+  } else {
+    const dpi = outputResolution === 'auto' ? 300 : Number(outputResolution);
+    const { w, h } = cardPx(dpi);
+    dimSub = `${w} × ${h} px @ ${dpi} DPI`;
+  }
 
   return (
     <div className="space-y-3">
@@ -60,7 +83,7 @@ export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
           <div className="min-w-0">
             <p className="text-emerald-300 text-sm font-medium">CMYK TIFF ready</p>
             <p className="text-emerald-600 text-xs">
-              True CMYK color space · LZW lossless · 300 DPI · ICC profiled
+              True CMYK color space · LZW lossless · {outputResolution === 'preserve' ? 'input' : outputResolution === 'auto' ? '300' : outputResolution} DPI · 85.6×54 mm · ICC profiled
             </p>
           </div>
         </div>
@@ -69,7 +92,7 @@ export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
       {/* Metadata strip */}
       {image.metadata && (
         <div className="grid grid-cols-3 gap-2 text-center">
-          <MetaCell label="Dimensions" value={`${image.metadata.width}×${image.metadata.height} px`} />
+          <MetaCell label="Dimensions" value="85.6 × 54 mm" sub={dimSub} />
           <MetaCell label="Input" value={originalFormat} />
           <MetaCell label="Output" value="CMYK TIFF" highlight />
         </div>
@@ -89,13 +112,14 @@ export function ImagePreview({ image, onDownload }: ImagePreviewProps) {
   );
 }
 
-function MetaCell({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function MetaCell({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: boolean }) {
   return (
     <div className="bg-gray-800/50 border border-gray-700/40 rounded-lg py-2 px-3">
       <p className="text-xs text-gray-500 mb-0.5">{label}</p>
       <p className={`text-xs font-semibold ${highlight ? 'text-cyan-400' : 'text-gray-200'}`}>
         {value}
       </p>
+      {sub && <p className="text-[10px] text-gray-500 mt-0.5">{sub}</p>}
     </div>
   );
 }

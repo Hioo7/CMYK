@@ -184,15 +184,19 @@ export async function convertToCMYK(
     img.onload = () => {
       URL.revokeObjectURL(url);
       try {
+        // Credit-card output frame: 85.6 × 54 mm at 300 DPI
+        const CARD_W = 1011; // Math.round(85.6 / 25.4 * 300)
+        const CARD_H = 638;  // Math.round(54   / 25.4 * 300)
+
         const canvas = document.createElement('canvas');
-        canvas.width  = img.width;
-        canvas.height = img.height;
+        canvas.width  = CARD_W;
+        canvas.height = CARD_H;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) throw new Error('Could not get canvas context');
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, CARD_W, CARD_H);
         onProgress?.(25);
 
         const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);

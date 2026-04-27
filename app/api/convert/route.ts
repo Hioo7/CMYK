@@ -16,9 +16,10 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // outputResolution options:
-    //   'auto'    → 300 DPI (print standard), pixels resampled to preserve physical size
-    //   'preserve'→ keep input DPI as-is, no resampling (pixel dimensions unchanged)
-    //   numeric   → resample to that DPI, physical size preserved
+    //   'auto'    → 300 DPI (print standard)
+    //   'preserve'→ keep input DPI as-is
+    //   numeric   → that DPI
+    // Output is always resized to credit-card physical dimensions: 85.6 × 54 mm
     const outputResolution = (formData.get('outputResolution') as string) ?? 'auto';
 
     const inputMeta = await sharp(buffer).metadata();
@@ -26,34 +27,27 @@ export async function POST(request: NextRequest) {
     const inputDpi = inputMeta.density ?? 72;
 
     let targetDpi: number;
-    let shouldResample: boolean;
-
     if (outputResolution === 'preserve') {
-      // No resampling — keep pixel count and DPI exactly as input
       targetDpi = inputDpi;
-      shouldResample = false;
     } else {
-      // 'auto' → 300 DPI for print; numeric → that DPI
       targetDpi = outputResolution === 'auto' ? 300 : Number(outputResolution);
-      // Resample only when DPI actually changes, to preserve physical print dimensions
-      shouldResample = Math.round(inputDpi) !== Math.round(targetDpi);
     }
+
+    // Credit-card physical dimensions (ISO/IEC 7810 ID-1)
+    const CARD_WIDTH_MM  = 85.6;
+    const CARD_HEIGHT_MM = 54;
 
     // Sharp TIFF xres/yres are in pixels per mm (libvips convention).
     const ppmm = targetDpi / 25.4;
 
-    let pipeline = sharp(buffer);
+    // Always resize to exact credit-card pixel dimensions at the target DPI.
+    const outWidth  = Math.round(CARD_WIDTH_MM  * ppmm);
+    const outHeight = Math.round(CARD_HEIGHT_MM * ppmm);
 
-    // Resample pixels so the physical print size stays the same at the new DPI.
-    // Example: 3000×2000 at 72 DPI → 12500×8333 at 300 DPI → same 41.7"×27.8" printed.
-    if (shouldResample && inputMeta.width && inputMeta.height) {
-      const scale = targetDpi / inputDpi;
-      pipeline = pipeline.resize(
-        Math.round(inputMeta.width * scale),
-        Math.round(inputMeta.height * scale),
-        { kernel: 'lanczos3', fit: 'fill' }
-      );
-    }
+    let pipeline = sharp(buffer).resize(outWidth, outHeight, {
+      kernel: 'lanczos3',
+      fit: 'fill',
+    });
 
     // Sharp converts to a true CMYK TIFF using libvips ICC-managed conversion.
     // LZW is lossless and typically halves the file size vs uncompressed.
